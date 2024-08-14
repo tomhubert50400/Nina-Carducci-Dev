@@ -61,6 +61,11 @@ body {
 	z-index: -1;
 }
 
+.carousel-item img {
+	object-fit: cover;
+
+}
+
 .picture {
 	flex: 1;
 	margin: 0 20px;
