@@ -96,10 +96,6 @@ body {
 	font-size: 14px;
 }
 
-#gallery {
-	/*	min-height: 100vh; */
-}
-
 .active-tag {
 	background-color: #5E5926 !important;
 	color: white !important;; /* Ajustez la couleur du texte si nécessaire */
