@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Gallery regression checks</title></head>
+<body>
+<h1>Gallery regression checks</h1>
+<p>Serve the repository locally, then open this page. It tests the real page and its CDN jQuery bundle.</p>
+<pre id="results">Running…</pre>
+<iframe title="Gallery under test" src="../index.html" width="1200" height="800"></iframe>
+<script>
+const frame = document.querySelector('iframe');
+const results = document.querySelector('#results');
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+frame.addEventListener('load', async () => {
+  const checks = [];
+  const assert = (condition, label) => {
+    if (!condition) throw new Error(label);
+    checks.push(`PASS: ${label}`);
+  };
+  try {
+    const win = frame.contentWindow;
+    const $ = win.jQuery;
+    assert($ && $.fn.jquery === '3.7.1', 'jQuery 3.7.1 loaded with its integrity check');
+    $.fx.off = true;
+    await wait(600);
+    assert($('.gallery').is(':visible'), 'gallery is shown');
+    assert($('.item-column .gallery-item').length === 9, 'all nine images are initialized');
+    assert($('.tags-bar .nav-link').length === 5, 'all category filters are present');
+    const visible = () => $('.gallery-item').filter(function () { return $(this).parents('.item-column').is(':visible'); });
+    for (const [tag, count] of [['Concert', 2], ['Entreprises', 3], ['Mariages', 2], ['Portrait', 2], ['all', 9]]) {
+      $(`.tags-bar [data-images-toggle="${tag}"]`).trigger('click');
+      assert(visible().length === count, `${tag} filter shows ${count} images`);
+      $(`.tags-bar [data-images-toggle="${tag}"]`).trigger('click');
+      assert(visible().length === count, `${tag} repeated filter click is stable`);
+    }
+    $('[data-images-toggle="Concert"]').trigger('click');
+    const sources = visible().map(function () { return $(this).attr('src'); }).get();
+    visible().first().trigger('click');
+    await wait(400);
+    const modal = $('#myAwesomeLightbox');
+    const source = () => modal.find('.lightboxImage').attr('src');
+    assert(modal.hasClass('show'), 'image opens the Bootstrap lightbox');
+    assert(source() === sources[0], 'lightbox starts on the clicked image');
+    modal.find('.mg-next').trigger('click');
+    assert(source() === sources[1], 'next stays within the active category');
+    modal.find('.mg-next').trigger('click');
+    assert(source() === sources[0], 'next wraps within the active category');
+    modal.find('.mg-prev').trigger('click');
+    assert(source() === sources[1], 'previous wraps within the active category');
+    modal.modal('hide');
+    await wait(400);
+    assert(!modal.hasClass('show'), 'lightbox can be dismissed');
+    $('[data-images-toggle="all"]').trigger('click');
+    visible().last().trigger('click');
+    await wait(400);
+    assert(modal.hasClass('show'), 'lightbox can be reopened after changing filters');
+    modal.find('.mg-next').trigger('click');
+    assert(source() === visible().first().attr('src'), 'all-images navigation wraps');
+    modal.modal('hide');
+    await wait(400);
+    assert(win.document.querySelectorAll('.modal-backdrop').length === 0, 'dismissal clears the backdrop');
+    results.textContent = checks.join('\n');
+    results.dataset.status = 'passed';
+  } catch (error) {
+    results.textContent = [...checks, `FAIL: ${error.message}`].join('\n');
+    results.dataset.status = 'failed';
+  }
+});
+</script>
+</body>
+</html>

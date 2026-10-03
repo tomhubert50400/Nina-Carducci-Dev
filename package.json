@@ -1,0 +1,6 @@
+{
+  "name": "nina-carducci-gallery-checks",
+  "private": true,
+  "scripts": { "test": "node --test tests/gallery.test.cjs" },
+  "devDependencies": { "jquery": "3.7.1", "jsdom": "^26.1.0" }
+}
